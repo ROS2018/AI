@@ -1,0 +1,9 @@
+Note:
+* Better to take reward = 0 instaed of 1 when the snake get in empty block (no collision, no fruit), otherwise the snake will learn to turn in circle to maximise reward.
+* Try to increase the likehood for the eploration during last steps
+* Try to avoid exploring actions, already have been explored
+* The network train a lot on the first steps, while it learn little on the last steps, that's probably why snake
+    stack in local minima and cannot discover new better states (i.e needs trimendous of time to learn about the advanced steps),
+     try to fix that.
+**** Try to maintain the game in each state until the snake learn better and take the best action for that state. (maintain the apple
+untile the snake learn how to munch it)
