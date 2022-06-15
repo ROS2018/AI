@@ -1,0 +1,161 @@
+import pygame, sys, random, time
+from pygame.math import Vector2 as vc
+import numpy as np
+
+
+# My Classes and Functions:
+
+class FRUIT:
+    def __init__(self):
+        self.pos = vc(random.randint(0, width - 1), random.randint(0, height - 1))
+
+    def draw(self):
+        # creat rectangle
+        fruit_rect = pygame.Rect(self.pos.x * cell_size, self.pos.y * cell_size, cell_size, cell_size)
+        screen.blit(apple, fruit_rect)
+        # pygame.draw.rect(screen, (250, 150, 70), fruit_rect)
+
+    def update_position(self):
+        self.pos = vc(random.randint(0, width - 1), random.randint(0, height - 1))
+
+
+class SNAKE:
+    def __init__(self):
+        self.body = [vc(5, 5), vc(6, 5), vc(7, 5)]
+        self.direction = random.choice([vc(-1, 0), vc(1, 0), vc(0, -1), vc(0, 1)])
+        self.user_direction = self.direction
+        self.score = 0
+
+    def draw(self):
+        # border_bottom_right_radius=15)
+        for block in self.body[1:]:
+            rect = pygame.Rect(block.x * cell_size, block.y * cell_size, cell_size, cell_size)
+            pygame.draw.rect(screen, (0, 250, 0), rect)
+            pygame.draw.rect(screen, (0 + 255, 250 * 0, 0),
+                             [self.body[0].x * cell_size, self.body[0].y * cell_size, cell_size, cell_size], 0,
+                             border_radius=10)  # , border_top_left_radius=0,
+
+    def move(self):
+        body_copy = self.body[:-1]
+        body_copy.insert(0, body_copy[0] + self.direction)
+        self.body = body_copy[:]
+
+        # update the direction:
+        self.direction = self.user_direction
+
+    def munch(self, fruit_pos):
+        self.body.insert(0, fruit_pos)
+        self.score += 1
+        print(self.score)
+
+    def initialize(self):
+        self.body = [vc(5, 5), vc(6, 5), vc(7, 5)]
+        self.direction = random.choice([vc(-1, 0), vc(1, 0), vc(0, -1), vc(0, 1)])
+        self.user_direction = self.direction
+        self.score = 0
+
+
+class ENVIRONMENT:
+    def __init__(self):
+        # Define Environment components:
+        self.fruit = FRUIT()
+        self.snake = SNAKE()
+
+    def update(self):
+        self.snake.move()
+        if self.check_collision():
+            print('Game Over !!!')
+            # time.sleep(2)
+            self.snake.initialize()
+            self.fruit.update_position()
+        self.check_fruit()
+
+        # self.snake.munch(self.fruit.pos)
+
+    def draw(self):
+        self.fruit.draw()
+        self.snake.draw()
+        self.draw_score()
+
+    def change_direction(self, event):
+        direction = vc(0, 0)
+        if event.key == pygame.K_UP:
+            direction = vc(0, -1)
+        if event.key == pygame.K_DOWN:
+            direction = vc(0, 1)
+        if event.key == pygame.K_LEFT:
+            direction = vc(-1, 0)
+        if event.key == pygame.K_RIGHT:
+            direction = vc(1, 0)
+
+        if self.snake.direction + direction != vc(0, 0):  # i.e snake cant step back
+            self.snake.user_direction = direction
+
+    def step(self, value):  # value = 0: right , 1: up, 2: left, 3: down
+        direction = vc(0, 0)
+        if value == 0:  # right
+            direction = vc(1, 0)
+        if value == 1:  # up
+            direction = vc(0, -1)
+        if value == 2:  # left
+            direction = vc(-1, 0)
+        if value == 3:  # down
+            direction = vc(0, 1)
+
+        if self.snake.direction + direction != vc(0, 0):  # i.e snake cant step back
+            self.snake.user_direction = direction
+
+    def check_fruit(self):
+        # check if the fruit is reached:
+        if self.fruit.pos == self.snake.body[0]:
+            # update the snake length
+            self.snake.munch(self.fruit.pos)
+            # randomize the fruite again
+            self.fruit.update_position()
+
+    def check_collision(self):
+        head = self.snake.body[0]
+        return (head.x > width - 1 or head.x < 0 or head.y > height - 1 or head.y < 0) #or (head in self.snake.body[2:])
+
+    def draw_score(self):
+        text = str(self.snake.score)
+        score_surface = game_font.render(text, True, (0, 0, 0))
+        x = cell_size * (width - 2)
+        y = cell_size
+        rect = score_surface.get_rect(center=(x, y))
+        screen.blit(score_surface, rect)
+
+    def render(self):
+        # EVENTS SECTION:
+        for event in pygame.event.get(): # that happens each 150 ms
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == BODY_UPDATE:
+                self.update()
+
+            if event.type == pygame.KEYDOWN:
+                self.change_direction(event)
+
+        # DRAWING SECTION: that happen each 1000/60= 16 ms
+        self.update()
+        screen.fill(pygame.Color('white'))  # (50,50,30)) #pygame.Color('green')
+        self.draw()
+        pygame.display.update()
+        clock.tick(10) # this is for the graphic update, the program will never run at more than 10 frames per second.
+
+
+# initiation:
+pygame.init()
+cell_size = 40
+width = 20
+height = 20
+screen = pygame.display.set_mode((cell_size * width, cell_size * height))  # (screen_width, screen_height)
+pygame.display.set_caption('Snake')
+clock = pygame.time.Clock()  # to control the speed of displaying
+apple = pygame.image.load('./apple.png')  #
+game_font = pygame.font.Font(None, 45)
+
+# Events:
+BODY_UPDATE = pygame.USEREVENT  # this is a custom event that could trigger, this is to update the backgroud compuation ( the snake.body moving each 150 ms)
+pygame.time.set_timer(BODY_UPDATE, 90)# the programme (snake body and ...) updates each 150 ms
